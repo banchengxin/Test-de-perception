@@ -39,8 +39,8 @@
     stimulus: `
       <h2>Consignes :</h2>
       <p>
-      Test de perception
-      Jugement de fludité
+      Test de perception <br><br>
+      Jugement de fludité <br><br>
       Vous allez écouter 12 extraits audio de personnes lisant un court texte en français.<br><br>
       Votre tâche : Évaluer <b>UNIQUEMENT</b> la fluidité de chaque lecture sur une échelle de 1 à 10.<br><br>
       La fluidité se définit par :<br>
@@ -84,7 +84,7 @@
     // Question ouverte (plugin html-text-response)
     let text_trial = {
       type: 'html-text-response',
-      stimulus: `<p>Pourquoi avez-vous choisi ce chiffre ?</p>`,
+      stimulus: `<p>Pourquoi?</p>`,
       placeholder: 'Votre réponse ici...',
       rows: 3,
       columns: 50,
