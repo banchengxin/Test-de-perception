@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test d'évaluation de fluidité</title>
+  <link href="dist/jspsych.css" rel="stylesheet" />
+  <script src="dist/jspsych.js"></script>
+  <script src="dist/plugin-html-button-response.js"></script>
+  <script src="dist/plugin-survey-text.js"></script>
+</head>
+<body></body>
+
+<script>
+  const jsPsych = initJsPsych({
+    on_finish: () => jsPsych.data.displayData()
+  });
+
+  const timeline = [];
+
+  const MAX_PLAYS = 3;
+
+  // Instructions en français
+  timeline.push({
+    type: jsPsychHtmlButtonResponse,
+    stimulus: `
+      <h2>Consignes</h2>
+      <p>Vous allez écouter <strong>40 extraits audio</strong> de personnes lisant un court texte en français.</p>
+      <p><strong>Votre tâche</strong> : Évaluer <u>UNIQUEMENT</u> la fluidité de chaque lecture sur une échelle de 1 à 10.</p>
+      <h3>La fluidité se définit par :</h3>
+      <ul style="text-align:left; max-width: 600px; margin:auto;">
+        <li>⏱️ <strong>Le débit</strong> : Rythme régulier</li>
+        <li>⏸️ <strong>Les pauses</strong> : Aux endroits logiques (virgules, points), sans hésitations fréquentes ("euh...")</li>
+        <li>🎶 <strong>Le flux</strong> : Liaisons naturelles entre les mots, intonation cohérente</li>
+      </ul>
+      <h3>Ignorez :</h3>
+      <ul style="text-align:left; max-width: 600px; margin:auto;">
+        <li>❌ L'accent ou la prononciation des sons individuels</li>
+        <li>❌ La complexité du vocabulaire</li>
+        <li>❌ Votre opinion sur le contenu du texte</li>
+      </ul>
+      <p><strong>Cliquez sur "Commencer" pour lancer l’évaluation.</strong></p>
+    `,
+    choices: ['Commencer']
+  });
+
+  // Génère les essais audio + évaluation + explication
+  const generateAudioTrials = () => {
+    const prompt_rating = `<p>Évaluez la fluidité de cette lecture (1 = pas fluide, 10 = très fluide)</p>`;
+    const prompt_explanation = `<p>Pourquoi avez-vous choisi ce chiffre ?</p>`;
+
+    const audio_files = jsPsych.randomization.shuffle(
+      Array.from({length: 40}, (_, i) => `audio/${i + 1}.wav`)
+    );
+
+    return audio_files.map((file, index) => {
+      const ratingTrial = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: () => `
+          <p>Cliquez sur "Jouer" pour écouter. Vous pouvez jouer jusqu’à ${MAX_PLAYS} fois.</p>
+          <audio id="audio_stimulus" src="${file}"></audio>
+          <button id="play_button" type="button">Jouer</button>
+        `,
+        choices: ['1','2','3','4','5','6','7','8','9','10'],
+        prompt: prompt_rating,
+        data: {
+          file: file,
+          trial_num: index + 1,
+          phase: 'rating'
+        },
+        on_load: () => {
+          let playCount = 0;
+          const audio = document.getElementById('audio_stimulus');
+          const playButton = document.getElementById('play_button');
+          playButton.addEventListener('click', () => {
+            if(playCount < MAX_PLAYS) {
+              audio.currentTime = 0;
+              audio.play();
+              playCount++;
+              if(playCount >= MAX_PLAYS) {
+                playButton.disabled = true;
+                playButton.textContent = 'Limite atteinte';
+              }
+            }
+          });
+        }
+      };
+
+      const explanationTrial = {
+        type: jsPsychSurveyText,
+        questions: [
+          {
+            prompt: prompt_explanation,
+            rows: 3,
+            columns: 50,
+            name: 'explanation'
+          }
+        ],
+        data: {
+          file: file,
+          trial_num: index + 1,
+          phase: 'explanation'
+        }
+      };
+
+      return [ratingTrial, explanationTrial];
+    }).flat();
+  };
+
+  timeline.push(...generateAudioTrials());
+
+  // Fin et remerciements
+  timeline.push({
+    type: jsPsychHtmlButtonResponse,
+    stimulus: '<p>Merci pour votre participation !</p>',
+    choices: ['Voir les résultats']
+  });
+
+  jsPsych.run(timeline);
+
+</script>
+
+</html>
