@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Test de fluidité</title>
 
-  <!-- jsPsych (v7+) -->
+  <!-- jsPsych v7+ -->
   <script src="dist/jspsych.js"></script>
   <script src="dist/plugin-audio-keyboard-response.js"></script>
   <script src="dist/plugin-html-slider-response.js"></script>
@@ -16,16 +16,30 @@
 <body></body>
 
 <script>
-  const jsPsych = initJsPsych();
+  // ✅ 初始化 jsPsych (v7+)
+  const jsPsych = initJsPsych({
+    on_finish: function () {
+      const json_data = jsPsych.data.get().json();
+      fetch("https://script.google.com/macros/s/AKfycbwFD7kKQ36cgH9MoKcDhHI72Om3xV9rAeovT57uYIpiIg7GlPNqOUyKum9kDe_qaAjC/exec", {
+        method: "POST",
+        body: json_data,
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+      .then(() => alert("Merci ! Vos réponses ont été envoyées avec succès."))
+      .catch(() => alert("Erreur : l'envoi a échoué. Veuillez contacter le chercheur."));
+    }
+  });
 
   const timeline = [];
 
-  // 📋 Questionnaire d'informations personnelles
+  // 👤 Infos personnelles
   timeline.push({
     type: 'survey-html-form',
     preamble: "<h2>Informations sur le participant</h2><p>Merci de répondre aux questions ci-dessous.</p>",
     html: `
-      <label>Âge : <input name="age" type="number" min="10" max="120" required></label><br><br>
+      <label>Âge : <input name="age" type="number" required></label><br><br>
       <label>Genre :
         <select name="genre" required>
           <option value="">--Choisir--</option>
@@ -56,7 +70,7 @@
     button_label: "Commencer l'expérience"
   });
 
-  // 📝 Consignes
+  // 📖 Consignes
   timeline.push({
     type: 'html-keyboard-response',
     stimulus: `
@@ -78,7 +92,7 @@
     `
   });
 
-  // 🎵 Liste audio randomisée
+  // 🎵 Audios
   let audio_files = [
     "audio/1.wav", "audio/2.wav", "audio/3.wav", "audio/4.wav",
     "audio/5.wav", "audio/6.wav", "audio/7.wav", "audio/8.wav",
@@ -87,7 +101,7 @@
 
   audio_files = jsPsych.randomization.shuffle(audio_files);
 
-  audio_files.forEach((file) => {
+  audio_files.forEach(file => {
     timeline.push(
       {
         type: 'audio-keyboard-response',
@@ -117,32 +131,14 @@
     );
   });
 
-  // 🎯 Fin
+  // ✅ Fin
   timeline.push({
     type: 'html-keyboard-response',
     stimulus: '<p>Merci pour votre participation !<br>Appuyez sur une touche pour envoyer vos réponses.</p>'
   });
 
-  // 🚀 Lancement et envoi vers Google Sheet
-  jsPsych.init({
-    timeline: timeline,
-    on_finish: function () {
-      const json_data = jsPsych.data.get().json();
+  // 🟢 Démarrer l’expérience
+  jsPsych.init({ timeline: timeline });
 
-      fetch("https://script.google.com/macros/s/AKfycbwFD7kKQ36cgH9MoKcDhHI72Om3xV9rAeovT57uYIpiIg7GlPNqOUyKum9kDe_qaAjC/exec", {
-        method: "POST",
-        body: json_data,
-        headers: {
-          "Content-Type": "application/json"
-        }
-      })
-      .then(() => {
-        alert("Merci ! Vos réponses ont été envoyées avec succès.");
-      })
-      .catch(() => {
-        alert("Erreur : l'envoi a échoué. Veuillez contacter le chercheur.");
-      });
-    }
-  });
 </script>
 </html>
