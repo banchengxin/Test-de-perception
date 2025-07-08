@@ -1,122 +1,151 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Test d'évaluation de fluidité</title>
-  <link href="dist/jspsych.css" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <title>Test de fluidité</title>
+
+  <!-- jsPsych v7+ -->
   <script src="dist/jspsych.js"></script>
-  <script src="dist/plugin-html-button-response.js"></script>
-  <script src="dist/plugin-survey-text.js"></script>
+  <script src="dist/plugin-audio-keyboard-response.js"></script>
+  <script src="dist/plugin-html-slider-response.js"></script>
+  <script src="dist/plugin-html-text-response.js"></script>
+  <script src="dist/plugin-html-keyboard-response.js"></script>
+  <script src="dist/plugin-survey-html-form.js"></script>
+  <link href="dist/jspsych.css" rel="stylesheet">
 </head>
 <body></body>
 
 <script>
+  // ✅ 初始化 jsPsych
   const jsPsych = initJsPsych({
-    on_finish: () => jsPsych.data.displayData()
+    on_finish: function () {
+      const json_data = jsPsych.data.get().json();
+      fetch("https://script.google.com/macros/s/AKfycbwFD7kKQ36cgH9MoKcDhHI72Om3xV9rAeovT57uYIpiIg7GlPNqOUyKum9kDe_qaAjC/exec", {
+        method: "POST",
+        body: json_data,
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+      .then(() => alert("Merci ! Vos réponses ont été envoyées avec succès."))
+      .catch(() => alert("Erreur : l'envoi a échoué. Veuillez contacter le chercheur."));
+    }
   });
+
+  // ✅ 获取插件对象
+  const jsPsychHtmlKeyboardResponse = window.jsPsychHtmlKeyboardResponse;
+  const jsPsychHtmlSliderResponse = window.jsPsychHtmlSliderResponse;
+  const jsPsychHtmlTextResponse = window.jsPsychHtmlTextResponse;
+  const jsPsychSurveyHtmlForm = window.jsPsychSurveyHtmlForm;
+  const jsPsychAudioKeyboardResponse = window.jsPsychAudioKeyboardResponse;
 
   const timeline = [];
 
-  const MAX_PLAYS = 3;
-
-  // Instructions en français
+  // 👤 Questionnaire
   timeline.push({
-    type: jsPsychHtmlButtonResponse,
-    stimulus: `
-      <h2>Consignes</h2>
-      <p>Vous allez écouter <strong>40 extraits audio</strong> de personnes lisant un court texte en français.</p>
-      <p><strong>Votre tâche</strong> : Évaluer <u>UNIQUEMENT</u> la fluidité de chaque lecture sur une échelle de 1 à 10.</p>
-      <h3>La fluidité se définit par :</h3>
-      <ul style="text-align:left; max-width: 600px; margin:auto;">
-        <li>⏱️ <strong>Le débit</strong> : Rythme régulier</li>
-        <li>⏸️ <strong>Les pauses</strong> : Aux endroits logiques (virgules, points), sans hésitations fréquentes ("euh...")</li>
-        <li>🎶 <strong>Le flux</strong> : Liaisons naturelles entre les mots, intonation cohérente</li>
-      </ul>
-      <h3>Ignorez :</h3>
-      <ul style="text-align:left; max-width: 600px; margin:auto;">
-        <li>❌ L'accent ou la prononciation des sons individuels</li>
-        <li>❌ La complexité du vocabulaire</li>
-        <li>❌ Votre opinion sur le contenu du texte</li>
-      </ul>
-      <p><strong>Cliquez sur "Commencer" pour lancer l’évaluation.</strong></p>
+    type: jsPsychSurveyHtmlForm,
+    preamble: "<h2>Informations sur le participant</h2><p>Merci de répondre aux questions ci-dessous.</p>",
+    html: `
+      <label>Âge : <input name="age" type="number" required></label><br><br>
+      <label>Genre :
+        <select name="genre" required>
+          <option value="">--Choisir--</option>
+          <option value="Homme">Homme</option>
+          <option value="Femme">Femme</option>
+          <option value="Non-binaire">Non-binaire</option>
+          <option value="Préférer ne pas dire">Préférer ne pas dire</option>
+        </select>
+      </label><br><br>
+      <label>Profession : <input name="profession" type="text" required></label><br><br>
+      <label>Langue maternelle : <input name="langue_maternelle" type="text" required></label><br><br>
+      <label>Langues étrangères parlées : <input name="langues" type="text"></label><br><br>
+      <label>Avez-vous appris le chinois ?
+        <select name="chinois" required>
+          <option value="">--Choisir--</option>
+          <option value="Oui">Oui</option>
+          <option value="Non">Non</option>
+        </select>
+      </label><br><br>
+      <label>Utilisez-vous un appareil auditif ?
+        <select name="appareil" required>
+          <option value="">--Choisir--</option>
+          <option value="Oui">Oui</option>
+          <option value="Non">Non</option>
+        </select>
+      </label>
     `,
-    choices: ['Commencer']
+    button_label: "Commencer l'expérience"
   });
 
-  // Génère les essais audio + évaluation + explication
-  const generateAudioTrials = () => {
-    const prompt_rating = `<p>Évaluez la fluidité de cette lecture (1 = pas fluide, 10 = très fluide)</p>`;
-    const prompt_explanation = `<p>Pourquoi avez-vous choisi ce chiffre ?</p>`;
-
-    const audio_files = jsPsych.randomization.shuffle(
-      Array.from({length: 40}, (_, i) => `audio/${i + 1}.wav`)
-    );
-
-    return audio_files.map((file, index) => {
-      const ratingTrial = {
-        type: jsPsychHtmlButtonResponse,
-        stimulus: () => `
-          <p>Cliquez sur "Jouer" pour écouter. Vous pouvez jouer jusqu’à ${MAX_PLAYS} fois.</p>
-          <audio id="audio_stimulus" src="${file}"></audio>
-          <button id="play_button" type="button">Jouer</button>
-        `,
-        choices: ['1','2','3','4','5','6','7','8','9','10'],
-        prompt: prompt_rating,
-        data: {
-          file: file,
-          trial_num: index + 1,
-          phase: 'rating'
-        },
-        on_load: () => {
-          let playCount = 0;
-          const audio = document.getElementById('audio_stimulus');
-          const playButton = document.getElementById('play_button');
-          playButton.addEventListener('click', () => {
-            if(playCount < MAX_PLAYS) {
-              audio.currentTime = 0;
-              audio.play();
-              playCount++;
-              if(playCount >= MAX_PLAYS) {
-                playButton.disabled = true;
-                playButton.textContent = 'Limite atteinte';
-              }
-            }
-          });
-        }
-      };
-
-      const explanationTrial = {
-        type: jsPsychSurveyText,
-        questions: [
-          {
-            prompt: prompt_explanation,
-            rows: 3,
-            columns: 50,
-            name: 'explanation'
-          }
-        ],
-        data: {
-          file: file,
-          trial_num: index + 1,
-          phase: 'explanation'
-        }
-      };
-
-      return [ratingTrial, explanationTrial];
-    }).flat();
-  };
-
-  timeline.push(...generateAudioTrials());
-
-  // Fin et remerciements
+  // 📖 Consignes
   timeline.push({
-    type: jsPsychHtmlButtonResponse,
-    stimulus: '<p>Merci pour votre participation !</p>',
-    choices: ['Voir les résultats']
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: `
+      <h1>Jugement de fluidité</h1>
+      <h2>Consignes</h2>
+      <p>
+      Vous allez écouter 12 extraits audio de personnes lisant un court texte en français.<br><br>
+      <strong>Votre tâche :</strong> Évaluer <strong>UNIQUEMENT</strong> la fluidité de chaque lecture sur une échelle de 1 à 10.<br><br>
+      La fluidité se définit par :<br>
+      ⏱️ Le débit : Rythme régulier<br>
+      ⏸️ Les pauses : Aux endroits logiques (virgules, points), sans hésitations fréquentes ("euh...")<br>
+      🎶 Le flux : Liaisons naturelles entre les mots, intonation cohérente<br><br>
+      Ignorez :<br>
+      ❌ L'accent ou la prononciation des sons individuels<br>
+      ❌ La complexité du vocabulaire<br>
+      ❌ Votre opinion sur le contenu du texte<br><br>
+      Appuyez sur une touche pour commencer.
+      </p>
+    `
   });
 
+  // 🎧 Audio files
+  let audio_files = [
+    "audio/1.wav", "audio/2.wav", "audio/3.wav", "audio/4.wav",
+    "audio/5.wav", "audio/6.wav", "audio/7.wav", "audio/8.wav",
+    "audio/9.wav", "audio/10.wav", "audio/11.wav", "audio/12.wav"
+  ];
+
+  audio_files = jsPsych.randomization.shuffle(audio_files);
+
+  // 🧪 Boucle audio + slider + justification
+  audio_files.forEach((file) => {
+    timeline.push(
+      {
+        type: jsPsychAudioKeyboardResponse,
+        stimulus: file,
+        choices: "NO_KEYS",
+        trial_ends_after_audio: true
+      },
+      {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: '<p>Sur une échelle de 1 à 10, comment jugez-vous la fluidité de cet extrait ?</p>',
+        min: 1,
+        max: 10,
+        step: 1,
+        slider_start: 5,
+        labels: ['1', '10'],
+        require_movement: true,
+        data: { question: 'fluidity_rating', audio: file }
+      },
+      {
+        type: jsPsychHtmlTextResponse,
+        stimulus: '<p>Pourquoi avez-vous choisi ce chiffre ?</p>',
+        placeholder: 'Votre réponse ici...',
+        rows: 3,
+        columns: 60,
+        data: { question: 'justification', audio: file }
+      }
+    );
+  });
+
+  // 🎉 Fin
+  timeline.push({
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: '<p>Merci pour votre participation !<br>Appuyez sur une touche pour envoyer vos réponses.</p>'
+  });
+
+  // 🚀 Démarrer l'expérience
   jsPsych.run(timeline);
-
 </script>
-
 </html>
