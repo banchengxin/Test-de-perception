@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <title>Test de fluidité</title>
   <script src="https://unpkg.com/jspsych@7.3.0"></script>
-  <script src="https://unpkg.com/@jspsych/plugin-audio-keyboard-response@1.1.1"></script>
-  <script src="https://unpkg.com/@jspsych/plugin-html-slider-response@1.1.1"></script>
-  <script src="https://unpkg.com/@jspsych/plugin-html-text-response@1.1.1"></script>
-  <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.1"></script>
-  <script src="https://unpkg.com/@jspsych/plugin-survey-html-form@1.1.1"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-audio-keyboard-response@7.3.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-slider-response@7.3.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-text-response@7.3.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@7.3.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-survey-html-form@7.3.0"></script>
   <link href="https://unpkg.com/jspsych@7.3.0/css/jspsych.css" rel="stylesheet">
 </head>
 <body></body>
 
 <script>
-  // ✅ 初始化 jsPsych
+  // 初始化 jsPsych
   const jsPsych = initJsPsych({
     on_finish: function() {
       const json_data = jsPsych.data.get().json();
@@ -30,9 +30,8 @@
 
   const timeline = [];
 
-  // 👤 使用字符串标识符代替变量
   timeline.push({
-    type: 'survey-html-form', // 直接使用插件注册名
+    type: 'survey-html-form',
     preamble: "<h2>Informations sur le participant</h2><p>Merci de répondre aux questions ci-dessous.</p>",
     html: `
       <label>Âge : <input name="age" type="number" required></label><br><br>
@@ -66,7 +65,6 @@
     button_label: "Commencer l'expérience"
   });
 
-  // 📖 Consignes
   timeline.push({
     type: 'html-keyboard-response',
     stimulus: `
@@ -88,10 +86,8 @@
     `
   });
 
-  // 🎵 动态获取基础路径
   const base_path = window.location.href.replace(/\/[^\/]*$/, '') + '/';
-  
-  // ✅ 音频文件列表
+
   let audio_files = [
     `${base_path}audio/1.wav`,
     `${base_path}audio/2.wav`,
@@ -107,7 +103,6 @@
     `${base_path}audio/12.wav`
   ];
 
-  // 调试：检查文件路径
   console.log("Audio files paths:", audio_files);
 
   audio_files = jsPsych.randomization.shuffle(audio_files);
@@ -142,13 +137,11 @@
     );
   });
 
-  // 🎉 Fin de l'expérience
   timeline.push({
     type: 'html-keyboard-response',
     stimulus: '<p>Merci pour votre participation !<br>Appuyez sur une touche pour envoyer vos réponses.</p>'
   });
 
-  // 🚀 Lancer l'expérience
   jsPsych.run(timeline);
 </script>
 </html>
