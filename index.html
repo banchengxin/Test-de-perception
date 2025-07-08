@@ -7,129 +7,112 @@
   <script src="dist/jspsych.js"></script>
   <script src="dist/plugin-html-button-response.js"></script>
   <script src="dist/plugin-survey-text.js"></script>
-  <script src="dist/plugin-survey-html-form.js"></script>
 </head>
 <body></body>
 
 <script>
-  // 替换成你的 Google Apps Script URL
-  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
-
   const jsPsych = initJsPsych({
-    on_finish: () => {
-      const data_json = jsPsych.data.get().json();
-
-      fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        body: data_json,
-        headers: {
-          "Content-Type": "application/json"
-        }
-      })
-      .then(response => {
-        if(response.ok) {
-          alert("Merci ! Vos réponses ont été envoyées avec succès.");
-        } else {
-          alert("Erreur lors de l'envoi des données.");
-        }
-      })
-      .catch(() => {
-        alert("Erreur réseau. Veuillez contacter le chercheur.");
-      });
-    }
+    on_finish: () => jsPsych.data.displayData()
   });
 
   const timeline = [];
 
-  // 1. 参与者信息
-  timeline.push({
-    type: 'survey-html-form',
-    preamble: "<h2>Informations sur le participant</h2><p>Merci de remplir ces informations avant de commencer.</p>",
-    html: `
-      <label>Âge : <input name="age" type="number" required></label><br><br>
-      <label>Genre :
-        <select name="genre" required>
-          <option value="">--Choisir--</option>
-          <option value="Homme">Homme</option>
-          <option value="Femme">Femme</option>
-          <option value="Non-binaire">Non-binaire</option>
-          <option value="Préférer ne pas dire">Préférer ne pas dire</option>
-        </select>
-      </label><br><br>
-      <label>Profession : <input name="profession" type="text" required></label><br><br>
-      <label>Langue maternelle : <input name="langue_maternelle" type="text" required></label><br><br>
-    `,
-    button_label: "Commencer"
-  });
+  const MAX_PLAYS = 3;
 
-  // 2. 介绍说明
+  // Instructions en français
   timeline.push({
     type: jsPsychHtmlButtonResponse,
     stimulus: `
       <h2>Consignes</h2>
       <p>Vous allez écouter <strong>40 extraits audio</strong> de personnes lisant un court texte en français.</p>
       <p><strong>Votre tâche</strong> : Évaluer <u>UNIQUEMENT</u> la fluidité de chaque lecture sur une échelle de 1 à 10.</p>
+      <h3>La fluidité se définit par :</h3>
+      <ul style="text-align:left; max-width: 600px; margin:auto;">
+        <li>⏱️ <strong>Le débit</strong> : Rythme régulier</li>
+        <li>⏸️ <strong>Les pauses</strong> : Aux endroits logiques (virgules, points), sans hésitations fréquentes ("euh...")</li>
+        <li>🎶 <strong>Le flux</strong> : Liaisons naturelles entre les mots, intonation cohérente</li>
+      </ul>
+      <h3>Ignorez :</h3>
+      <ul style="text-align:left; max-width: 600px; margin:auto;">
+        <li>❌ L'accent ou la prononciation des sons individuels</li>
+        <li>❌ La complexité du vocabulaire</li>
+        <li>❌ Votre opinion sur le contenu du texte</li>
+      </ul>
+      <p><strong>Cliquez sur "Commencer" pour lancer l’évaluation.</strong></p>
     `,
     choices: ['Commencer']
   });
 
-  // 3. 音频评价循环
-  const MAX_PLAYS = 3;
-  const audio_files = jsPsych.randomization.shuffle(
-    Array.from({length: 40}, (_, i) => `audio/${i + 1}.wav`)
-  );
+  // Génère les essais audio + évaluation + explication
+  const generateAudioTrials = () => {
+    const prompt_rating = `<p>Évaluez la fluidité de cette lecture (1 = pas fluide, 10 = très fluide)</p>`;
+    const prompt_explanation = `<p>Pourquoi avez-vous choisi ce chiffre ?</p>`;
 
-  audio_files.forEach((file, index) => {
-    timeline.push({
-      type: jsPsychHtmlButtonResponse,
-      stimulus: () => `
-        <p>Cliquez sur "Jouer" pour écouter. Vous pouvez jouer jusqu’à ${MAX_PLAYS} fois.</p>
-        <audio id="audio_stimulus" src="${file}"></audio>
-        <button id="play_button" type="button">Jouer</button>
-      `,
-      choices: ['1','2','3','4','5','6','7','8','9','10'],
-      prompt: `<p>Évaluez la fluidité de cette lecture (1 = pas fluide, 10 = très fluide)</p>`,
-      data: {
-        file: file,
-        trial_num: index + 1,
-        phase: 'rating'
-      },
-      on_load: () => {
-        let playCount = 0;
-        const audio = document.getElementById('audio_stimulus');
-        const playButton = document.getElementById('play_button');
-        playButton.addEventListener('click', () => {
-          if(playCount < MAX_PLAYS) {
-            audio.currentTime = 0;
-            audio.play();
-            playCount++;
-            if(playCount >= MAX_PLAYS) {
-              playButton.disabled = true;
-              playButton.textContent = 'Limite atteinte';
+    const audio_files = jsPsych.randomization.shuffle(
+      Array.from({length: 40}, (_, i) => `audio/${i + 1}.wav`)
+    );
+
+    return audio_files.map((file, index) => {
+      const ratingTrial = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: () => `
+          <p>Cliquez sur "Jouer" pour écouter. Vous pouvez jouer jusqu’à ${MAX_PLAYS} fois.</p>
+          <audio id="audio_stimulus" src="${file}"></audio>
+          <button id="play_button" type="button">Jouer</button>
+        `,
+        choices: ['1','2','3','4','5','6','7','8','9','10'],
+        prompt: prompt_rating,
+        data: {
+          file: file,
+          trial_num: index + 1,
+          phase: 'rating'
+        },
+        on_load: () => {
+          let playCount = 0;
+          const audio = document.getElementById('audio_stimulus');
+          const playButton = document.getElementById('play_button');
+          playButton.addEventListener('click', () => {
+            if(playCount < MAX_PLAYS) {
+              audio.currentTime = 0;
+              audio.play();
+              playCount++;
+              if(playCount >= MAX_PLAYS) {
+                playButton.disabled = true;
+                playButton.textContent = 'Limite atteinte';
+              }
             }
+          });
+        }
+      };
+
+      const explanationTrial = {
+        type: jsPsychSurveyText,
+        questions: [
+          {
+            prompt: prompt_explanation,
+            rows: 3,
+            columns: 50,
+            name: 'explanation'
           }
-        });
-      }
-    });
+        ],
+        data: {
+          file: file,
+          trial_num: index + 1,
+          phase: 'explanation'
+        }
+      };
 
-    timeline.push({
-      type: jsPsychSurveyText,
-      questions: [
-        {prompt: `<p>Pourquoi avez-vous choisi ce chiffre ?</p>`, rows: 3, columns: 50, name: 'justification'}
-      ],
-      data: {
-        file: file,
-        trial_num: index + 1,
-        phase: 'explanation'
-      }
-    });
-  });
+      return [ratingTrial, explanationTrial];
+    }).flat();
+  };
 
-  // 4. 结束感谢
+  timeline.push(...generateAudioTrials());
+
+  // Fin et remerciements
   timeline.push({
     type: jsPsychHtmlButtonResponse,
     stimulus: '<p>Merci pour votre participation !</p>',
-    choices: ['Terminer']
+    choices: ['Voir les résultats']
   });
 
   jsPsych.run(timeline);
