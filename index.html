@@ -1,38 +1,50 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Test de fluidité</title>
-  <script src="https://unpkg.com/jspsych@7.3.0"></script>
-  <script src="https://unpkg.com/@jspsych/plugin-audio-keyboard-response@7.3.0"></script>
-  <script src="https://unpkg.com/@jspsych/plugin-html-slider-response@7.3.0"></script>
-  <script src="https://unpkg.com/@jspsych/plugin-html-text-response@7.3.0"></script>
-  <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@7.3.0"></script>
-  <script src="https://unpkg.com/@jspsych/plugin-survey-html-form@7.3.0"></script>
-  <link href="https://unpkg.com/jspsych@7.3.0/css/jspsych.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>Test d'évaluation de fluidité</title>
+  <link href="dist/jspsych.css" rel="stylesheet" />
+  <script src="dist/jspsych.js"></script>
+  <script src="dist/plugin-html-button-response.js"></script>
+  <script src="dist/plugin-survey-text.js"></script>
+  <script src="dist/plugin-survey-html-form.js"></script>
 </head>
 <body></body>
 
 <script>
-  // 初始化 jsPsych
+  // 替换成你的 Google Apps Script URL
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
+
   const jsPsych = initJsPsych({
-    on_finish: function() {
-      const json_data = jsPsych.data.get().json();
-      fetch("https://script.google.com/macros/s/VOTRE_URL_GOOGLE_SCRIPT/exec", {
+    on_finish: () => {
+      const data_json = jsPsych.data.get().json();
+
+      fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
-        body: json_data,
-        headers: { "Content-Type": "application/json" }
+        body: data_json,
+        headers: {
+          "Content-Type": "application/json"
+        }
       })
-      .then(() => alert("Merci ! Vos réponses ont été envoyées avec succès."))
-      .catch(() => alert("Erreur : l'envoi a échoué. Veuillez contacter le chercheur."));
+      .then(response => {
+        if(response.ok) {
+          alert("Merci ! Vos réponses ont été envoyées avec succès.");
+        } else {
+          alert("Erreur lors de l'envoi des données.");
+        }
+      })
+      .catch(() => {
+        alert("Erreur réseau. Veuillez contacter le chercheur.");
+      });
     }
   });
 
   const timeline = [];
 
+  // 1. 参与者信息
   timeline.push({
     type: 'survey-html-form',
-    preamble: "<h2>Informations sur le participant</h2><p>Merci de répondre aux questions ci-dessous.</p>",
+    preamble: "<h2>Informations sur le participant</h2><p>Merci de remplir ces informations avant de commencer.</p>",
     html: `
       <label>Âge : <input name="age" type="number" required></label><br><br>
       <label>Genre :
@@ -46,102 +58,82 @@
       </label><br><br>
       <label>Profession : <input name="profession" type="text" required></label><br><br>
       <label>Langue maternelle : <input name="langue_maternelle" type="text" required></label><br><br>
-      <label>Langues étrangères parlées : <input name="langues" type="text"></label><br><br>
-      <label>Avez-vous appris le chinois ?
-        <select name="chinois" required>
-          <option value="">--Choisir--</option>
-          <option value="Oui">Oui</option>
-          <option value="Non">Non</option>
-        </select>
-      </label><br><br>
-      <label>Utilisez-vous un appareil auditif ?
-        <select name="appareil" required>
-          <option value="">--Choisir--</option>
-          <option value="Oui">Oui</option>
-          <option value="Non">Non</option>
-        </select>
-      </label>
     `,
-    button_label: "Commencer l'expérience"
+    button_label: "Commencer"
   });
 
+  // 2. 介绍说明
   timeline.push({
-    type: 'html-keyboard-response',
+    type: jsPsychHtmlButtonResponse,
     stimulus: `
-      <h1>Jugement de fluidité</h1>
       <h2>Consignes</h2>
-      <p>
-      Vous allez écouter 12 extraits audio de personnes lisant un court texte en français.<br><br>
-      <strong>Votre tâche :</strong> Évaluer <strong>UNIQUEMENT</strong> la fluidité de chaque lecture sur une échelle de 1 à 10.<br><br>
-      La fluidité se définit par :<br>
-      ⏱️ Le débit : Rythme régulier<br>
-      ⏸️ Les pauses : Aux endroits logiques, sans hésitations fréquentes<br>
-      🎶 Le flux : Liaisons naturelles, intonation cohérente<br><br>
-      Ignorez :<br>
-      ❌ L'accent<br>
-      ❌ La prononciation<br>
-      ❌ Votre opinion sur le texte<br><br>
-      Appuyez sur une touche pour commencer.
-      </p>
-    `
+      <p>Vous allez écouter <strong>40 extraits audio</strong> de personnes lisant un court texte en français.</p>
+      <p><strong>Votre tâche</strong> : Évaluer <u>UNIQUEMENT</u> la fluidité de chaque lecture sur une échelle de 1 à 10.</p>
+    `,
+    choices: ['Commencer']
   });
 
-  const base_path = window.location.href.replace(/\/[^\/]*$/, '') + '/';
+  // 3. 音频评价循环
+  const MAX_PLAYS = 3;
+  const audio_files = jsPsych.randomization.shuffle(
+    Array.from({length: 40}, (_, i) => `audio/${i + 1}.wav`)
+  );
 
-  let audio_files = [
-    `${base_path}audio/1.wav`,
-    `${base_path}audio/2.wav`,
-    `${base_path}audio/3.wav`,
-    `${base_path}audio/4.wav`,
-    `${base_path}audio/5.wav`,
-    `${base_path}audio/6.wav`,
-    `${base_path}audio/7.wav`,
-    `${base_path}audio/8.wav`,
-    `${base_path}audio/9.wav`,
-    `${base_path}audio/10.wav`,
-    `${base_path}audio/11.wav`,
-    `${base_path}audio/12.wav`
-  ];
-
-  console.log("Audio files paths:", audio_files);
-
-  audio_files = jsPsych.randomization.shuffle(audio_files);
-
-  audio_files.forEach(file => {
-    timeline.push(
-      {
-        type: 'audio-keyboard-response',
-        stimulus: file,
-        choices: "NO_KEYS",
-        trial_ends_after_audio: true
+  audio_files.forEach((file, index) => {
+    timeline.push({
+      type: jsPsychHtmlButtonResponse,
+      stimulus: () => `
+        <p>Cliquez sur "Jouer" pour écouter. Vous pouvez jouer jusqu’à ${MAX_PLAYS} fois.</p>
+        <audio id="audio_stimulus" src="${file}"></audio>
+        <button id="play_button" type="button">Jouer</button>
+      `,
+      choices: ['1','2','3','4','5','6','7','8','9','10'],
+      prompt: `<p>Évaluez la fluidité de cette lecture (1 = pas fluide, 10 = très fluide)</p>`,
+      data: {
+        file: file,
+        trial_num: index + 1,
+        phase: 'rating'
       },
-      {
-        type: 'html-slider-response',
-        stimulus: '<p>Sur une échelle de 1 à 10, comment jugez-vous la fluidité de cet extrait ?</p>',
-        min: 1,
-        max: 10,
-        step: 1,
-        slider_start: 5,
-        labels: ['1 (Pas fluide)', '10 (Très fluide)'],
-        require_movement: true,
-        data: { question: 'fluidity_rating', audio: file }
-      },
-      {
-        type: 'html-text-response',
-        stimulus: '<p>Pourquoi avez-vous choisi ce chiffre ?</p>',
-        placeholder: 'Votre réponse ici...',
-        rows: 3,
-        columns: 60,
-        data: { question: 'justification', audio: file }
+      on_load: () => {
+        let playCount = 0;
+        const audio = document.getElementById('audio_stimulus');
+        const playButton = document.getElementById('play_button');
+        playButton.addEventListener('click', () => {
+          if(playCount < MAX_PLAYS) {
+            audio.currentTime = 0;
+            audio.play();
+            playCount++;
+            if(playCount >= MAX_PLAYS) {
+              playButton.disabled = true;
+              playButton.textContent = 'Limite atteinte';
+            }
+          }
+        });
       }
-    );
+    });
+
+    timeline.push({
+      type: jsPsychSurveyText,
+      questions: [
+        {prompt: `<p>Pourquoi avez-vous choisi ce chiffre ?</p>`, rows: 3, columns: 50, name: 'justification'}
+      ],
+      data: {
+        file: file,
+        trial_num: index + 1,
+        phase: 'explanation'
+      }
+    });
   });
 
+  // 4. 结束感谢
   timeline.push({
-    type: 'html-keyboard-response',
-    stimulus: '<p>Merci pour votre participation !<br>Appuyez sur une touche pour envoyer vos réponses.</p>'
+    type: jsPsychHtmlButtonResponse,
+    stimulus: '<p>Merci pour votre participation !</p>',
+    choices: ['Terminer']
   });
 
   jsPsych.run(timeline);
+
 </script>
+
 </html>
