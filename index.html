@@ -1,223 +1,154 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Test d'évaluation de fluidité</title>
-  <link href="dist/jspsych.css" rel="stylesheet" />
-  <script src="dist/jspsych.js"></script>
-  <script src="dist/plugin-html-button-response.js"></script>
-  <script src="dist/plugin-survey-text.js"></script>
-  <script src="dist/plugin-survey-multi-choice.js"></script>
-  <script src="dist/plugin-survey-html-form.js"></script>
+  <meta charset="UTF-8">
+  <title>Test de fluidité</title>
+  <script src="https://unpkg.com/jspsych@7.3.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-audio-keyboard-response@1.1.1"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-slider-response@1.1.1"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-text-response@1.1.1"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.1"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-survey-html-form@1.1.1"></script>
+  <link href="https://unpkg.com/jspsych@7.3.0/css/jspsych.css" rel="stylesheet">
 </head>
 <body></body>
 
 <script>
+  // ✅ 初始化 jsPsych
   const jsPsych = initJsPsych({
-    on_finish: () => jsPsych.data.displayData()
+    on_finish: function() {
+      const json_data = jsPsych.data.get().json();
+      fetch("https://script.google.com/macros/s/VOTRE_URL_GOOGLE_SCRIPT/exec", {
+        method: "POST",
+        body: json_data,
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(() => alert("Merci ! Vos réponses ont été envoyées avec succès."))
+      .catch(() => alert("Erreur : l'envoi a échoué. Veuillez contacter le chercheur."));
+    }
   });
 
   const timeline = [];
 
-  const MAX_PLAYS = 3;
-
-  // Instructions générales
+  // 👤 使用字符串标识符代替变量
   timeline.push({
-    type: jsPsychHtmlButtonResponse,
-    stimulus: `
-      <h2>Bienvenue au test d'évaluation de fluidité</h2>
-      <p>Avant de commencer, nous avons besoin de quelques informations sur vous.</p>
-      <p>Ensuite, vous écouterez <strong>12 extraits audio</strong> de personnes lisant un court texte en français.</p>
-      <p><strong>Cliquez sur "Continuer" pour commencer.</strong></p>
-    `,
-    choices: ['Continuer']
-  });
-
-  // Questionnaire démographique
-  timeline.push({
-    type: jsPsychSurveyHtmlForm,
+    type: 'survey-html-form', // 直接使用插件注册名
+    preamble: "<h2>Informations sur le participant</h2><p>Merci de répondre aux questions ci-dessous.</p>",
     html: `
-      <h2>Informations personnelles</h2>
-      <div style="text-align: left; max-width: 600px; margin: auto;">
-        <p><label for="age">Âge :</label><br>
-        <input type="number" id="age" name="age" min="18" max="99" required style="width: 100px;"></p>
-        
-        <p><label for="gender">Genre :</label><br>
-        <select id="gender" name="gender" required style="width: 200px;">
-          <option value="">Sélectionnez...</option>
-          <option value="femme">Femme</option>
-          <option value="homme">Homme</option>
-          <option value="autre">Autre</option>
-          <option value="non-binaire">Non-binaire</option>
-          <option value="prefere_ne_pas_dire">Préfère ne pas dire</option>
-        </select></p>
-        
-        <p><label for="profession">Profession/Domaine d'activité :</label><br>
-        <input type="text" id="profession" name="profession" required style="width: 300px;"></p>
-        
-        <p><label for="education">Niveau d'éducation :</label><br>
-        <select id="education" name="education" required style="width: 300px;">
-          <option value="">Sélectionnez...</option>
-          <option value="primaire">Primaire</option>
-          <option value="secondaire">Secondaire</option>
-          <option value="bac">Baccalauréat</option>
-          <option value="bac_plus_2">Bac+2 (BTS, DUT, etc.)</option>
-          <option value="licence">Licence (Bac+3)</option>
-          <option value="master">Master (Bac+5)</option>
-          <option value="doctorat">Doctorat</option>
-          <option value="autre">Autre</option>
-        </select></p>
-        
-        <p><label for="native_language">Langue maternelle :</label><br>
-        <input type="text" id="native_language" name="native_language" required style="width: 200px;"></p>
-        
-        <p><label for="chinese_speaker">Parlez-vous chinois ?</label><br>
-        <select id="chinese_speaker" name="chinese_speaker" required style="width: 200px;">
-          <option value="">Sélectionnez...</option>
-          <option value="oui_courant">Oui, couramment</option>
-          <option value="oui_intermediaire">Oui, niveau intermédiaire</option>
-          <option value="oui_debutant">Oui, niveau débutant</option>
-          <option value="non">Non</option>
-        </select></p>
-        
-        <p><label for="french_level">Niveau de français :</label><br>
-        <select id="french_level" name="french_level" required style="width: 200px;">
-          <option value="">Sélectionnez...</option>
-          <option value="natif">Natif</option>
-          <option value="c2">C2 (Maîtrise)</option>
-          <option value="c1">C1 (Autonome)</option>
-          <option value="b2">B2 (Avancé)</option>
-          <option value="b1">B1 (Intermédiaire)</option>
-          <option value="a2">A2 (Élémentaire)</option>
-          <option value="a1">A1 (Débutant)</option>
-        </select></p>
-        
-        <p><label for="other_languages">Autres langues parlées (séparées par des virgules) :</label><br>
-        <input type="text" id="other_languages" name="other_languages" style="width: 400px;" placeholder="ex: anglais, espagnol, allemand"></p>
-        
-        <p><label for="listening_experience">Avez-vous de l'expérience dans l'évaluation de la parole ou de la prononciation ?</label><br>
-        <select id="listening_experience" name="listening_experience" required style="width: 300px;">
-          <option value="">Sélectionnez...</option>
-          <option value="oui_professionnel">Oui, professionnel (enseignant, linguiste, etc.)</option>
-          <option value="oui_formation">Oui, j'ai reçu une formation</option>
-          <option value="oui_occasionnel">Oui, de manière occasionnelle</option>
-          <option value="non">Non</option>
-        </select></p>
-        
-        <p><label for="hearing_problems">Avez-vous des problèmes d'audition ?</label><br>
-        <select id="hearing_problems" name="hearing_problems" required style="width: 200px;">
-          <option value="">Sélectionnez...</option>
-          <option value="non">Non</option>
-          <option value="oui_leger">Oui, léger</option>
-          <option value="oui_modere">Oui, modéré</option>
-          <option value="oui_severe">Oui, sévère</option>
-        </select></p>
-      </div>
+      <label>Âge : <input name="age" type="number" required></label><br><br>
+      <label>Genre :
+        <select name="genre" required>
+          <option value="">--Choisir--</option>
+          <option value="Homme">Homme</option>
+          <option value="Femme">Femme</option>
+          <option value="Non-binaire">Non-binaire</option>
+          <option value="Préférer ne pas dire">Préférer ne pas dire</option>
+        </select>
+      </label><br><br>
+      <label>Profession : <input name="profession" type="text" required></label><br><br>
+      <label>Langue maternelle : <input name="langue_maternelle" type="text" required></label><br><br>
+      <label>Langues étrangères parlées : <input name="langues" type="text"></label><br><br>
+      <label>Avez-vous appris le chinois ?
+        <select name="chinois" required>
+          <option value="">--Choisir--</option>
+          <option value="Oui">Oui</option>
+          <option value="Non">Non</option>
+        </select>
+      </label><br><br>
+      <label>Utilisez-vous un appareil auditif ?
+        <select name="appareil" required>
+          <option value="">--Choisir--</option>
+          <option value="Oui">Oui</option>
+          <option value="Non">Non</option>
+        </select>
+      </label>
     `,
-    data: {
-      phase: 'demographics'
-    }
+    button_label: "Commencer l'expérience"
   });
 
-  // Instructions pour l'évaluation
+  // 📖 Consignes
   timeline.push({
-    type: jsPsychHtmlButtonResponse,
+    type: 'html-keyboard-response',
     stimulus: `
-      <h2>Consignes pour l'évaluation</h2>
-      <p>Vous allez maintenant écouter <strong>12 extraits audio</strong> de personnes lisant un court texte en français.</p>
-      <p><strong>Votre tâche</strong> : Évaluer <u>UNIQUEMENT</u> la fluidité de chaque lecture sur une échelle de 1 à 10.</p>
-      <h3>La fluidité se définit par :</h3>
-      <ul style="text-align:left; max-width: 600px; margin:auto;">
-        <li>⏱️ <strong>Le débit</strong> : Rythme régulier</li>
-        <li>⏸️ <strong>Les pauses</strong> : Aux endroits logiques (virgules, points), sans hésitations fréquentes ("euh...")</li>
-        <li>🎶 <strong>Le flux</strong> : Liaisons naturelles entre les mots, intonation cohérente</li>
-      </ul>
-      <h3>Ignorez :</h3>
-      <ul style="text-align:left; max-width: 600px; margin:auto;">
-        <li>❌ L'accent ou la prononciation des sons individuels</li>
-        <li>❌ La complexité du vocabulaire</li>
-        <li>❌ Votre opinion sur le contenu du texte</li>
-      </ul>
-      <p><strong>Cliquez sur "Commencer l'évaluation" pour lancer l'évaluation.</strong></p>
-    `,
-    choices: ['Commencer l\'évaluation']
+      <h1>Jugement de fluidité</h1>
+      <h2>Consignes</h2>
+      <p>
+      Vous allez écouter 12 extraits audio de personnes lisant un court texte en français.<br><br>
+      <strong>Votre tâche :</strong> Évaluer <strong>UNIQUEMENT</strong> la fluidité de chaque lecture sur une échelle de 1 à 10.<br><br>
+      La fluidité se définit par :<br>
+      ⏱️ Le débit : Rythme régulier<br>
+      ⏸️ Les pauses : Aux endroits logiques, sans hésitations fréquentes<br>
+      🎶 Le flux : Liaisons naturelles, intonation cohérente<br><br>
+      Ignorez :<br>
+      ❌ L'accent<br>
+      ❌ La prononciation<br>
+      ❌ Votre opinion sur le texte<br><br>
+      Appuyez sur une touche pour commencer.
+      </p>
+    `
   });
 
-  // Génère les essais audio + évaluation + explication (réduit à 12)
-  const generateAudioTrials = () => {
-    const prompt_rating = `<p>Évaluez la fluidité de cette lecture (1 = pas fluide, 10 = très fluide)</p>`;
-    const prompt_explanation = `<p>Pourquoi avez-vous choisi ce chiffre ?</p>`;
+  // 🎵 动态获取基础路径
+  const base_path = window.location.href.replace(/\/[^\/]*$/, '') + '/';
+  
+  // ✅ 音频文件列表
+  let audio_files = [
+    `${base_path}audio/1.wav`,
+    `${base_path}audio/2.wav`,
+    `${base_path}audio/3.wav`,
+    `${base_path}audio/4.wav`,
+    `${base_path}audio/5.wav`,
+    `${base_path}audio/6.wav`,
+    `${base_path}audio/7.wav`,
+    `${base_path}audio/8.wav`,
+    `${base_path}audio/9.wav`,
+    `${base_path}audio/10.wav`,
+    `${base_path}audio/11.wav`,
+    `${base_path}audio/12.wav`
+  ];
 
-    const audio_files = jsPsych.randomization.shuffle(
-      Array.from({length: 12}, (_, i) => `audio/${i + 1}.wav`)
+  // 调试：检查文件路径
+  console.log("Audio files paths:", audio_files);
+
+  audio_files = jsPsych.randomization.shuffle(audio_files);
+
+  audio_files.forEach(file => {
+    timeline.push(
+      {
+        type: 'audio-keyboard-response',
+        stimulus: file,
+        choices: "NO_KEYS",
+        trial_ends_after_audio: true
+      },
+      {
+        type: 'html-slider-response',
+        stimulus: '<p>Sur une échelle de 1 à 10, comment jugez-vous la fluidité de cet extrait ?</p>',
+        min: 1,
+        max: 10,
+        step: 1,
+        slider_start: 5,
+        labels: ['1 (Pas fluide)', '10 (Très fluide)'],
+        require_movement: true,
+        data: { question: 'fluidity_rating', audio: file }
+      },
+      {
+        type: 'html-text-response',
+        stimulus: '<p>Pourquoi avez-vous choisi ce chiffre ?</p>',
+        placeholder: 'Votre réponse ici...',
+        rows: 3,
+        columns: 60,
+        data: { question: 'justification', audio: file }
+      }
     );
-
-    return audio_files.map((file, index) => {
-      const ratingTrial = {
-        type: jsPsychHtmlButtonResponse,
-        stimulus: () => `
-          <p><strong>Extrait ${index + 1}/12</strong></p>
-          <p>Cliquez sur "Jouer" pour écouter. Vous pouvez jouer jusqu'à ${MAX_PLAYS} fois.</p>
-          <audio id="audio_stimulus" src="${file}"></audio>
-          <button id="play_button" type="button">Jouer</button>
-        `,
-        choices: ['1','2','3','4','5','6','7','8','9','10'],
-        prompt: prompt_rating,
-        data: {
-          file: file,
-          trial_num: index + 1,
-          phase: 'rating'
-        },
-        on_load: () => {
-          let playCount = 0;
-          const audio = document.getElementById('audio_stimulus');
-          const playButton = document.getElementById('play_button');
-          playButton.addEventListener('click', () => {
-            if(playCount < MAX_PLAYS) {
-              audio.currentTime = 0;
-              audio.play();
-              playCount++;
-              if(playCount >= MAX_PLAYS) {
-                playButton.disabled = true;
-                playButton.textContent = 'Limite atteinte';
-              }
-            }
-          });
-        }
-      };
-
-      const explanationTrial = {
-        type: jsPsychSurveyText,
-        questions: [
-          {
-            prompt: prompt_explanation,
-            rows: 3,
-            columns: 50,
-            name: 'explanation'
-          }
-        ],
-        data: {
-          file: file,
-          trial_num: index + 1,
-          phase: 'explanation'
-        }
-      };
-
-      return [ratingTrial, explanationTrial];
-    }).flat();
-  };
-
-  timeline.push(...generateAudioTrials());
-
-  // Fin et remerciements
-  timeline.push({
-    type: jsPsychHtmlButtonResponse,
-    stimulus: '<p>Merci pour votre participation !</p>',
-    choices: ['Voir les résultats']
   });
 
+  // 🎉 Fin de l'expérience
+  timeline.push({
+    type: 'html-keyboard-response',
+    stimulus: '<p>Merci pour votre participation !<br>Appuyez sur une touche pour envoyer vos réponses.</p>'
+  });
+
+  // 🚀 Lancer l'expérience
   jsPsych.run(timeline);
-
 </script>
-
 </html>
