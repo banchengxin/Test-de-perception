@@ -4,23 +4,23 @@
   <meta charset="UTF-8">
   <title>Test de fluidité</title>
 
-  <!-- jsPsych v7+ -->
-  <script src="dist/jspsych.js"></script>
-  <script src="dist/plugin-audio-keyboard-response.js"></script>
-  <script src="dist/plugin-html-slider-response.js"></script>
-  <script src="dist/plugin-html-text-response.js"></script>
-  <script src="dist/plugin-html-keyboard-response.js"></script>
-  <script src="dist/plugin-survey-html-form.js"></script>
-  <link href="dist/jspsych.css" rel="stylesheet">
+  <!-- ✅ jsPsych v7 CDN -->
+  <script src="https://unpkg.com/jspsych@7.3.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-audio-keyboard-response@1.1.1"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-slider-response@1.1.1"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-text-response@1.1.1"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.1"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-survey-html-form@1.1.1"></script>
+  <link href="https://unpkg.com/jspsych@7.3.0/css/jspsych.css" rel="stylesheet">
 </head>
 <body></body>
 
 <script>
-  // ✅ 初始化 jsPsych (v7+)
+  // ✅ 初始化 jsPsych v7
   const jsPsych = initJsPsych({
     on_finish: function () {
       const json_data = jsPsych.data.get().json();
-      fetch("https://script.google.com/macros/s/AKfycbwFD7kKQ36cgH9MoKcDhHI72Om3xV9rAeovT57uYIpiIg7GlPNqOUyKum9kDe_qaAjC/exec", {
+      fetch("https://script.google.com/macros/s/PASTE_YOUR_GOOGLE_SCRIPT_URL_HERE/exec", {
         method: "POST",
         body: json_data,
         headers: {
@@ -34,7 +34,7 @@
 
   const timeline = [];
 
-  // 👤 Infos personnelles
+  // 👤 Informations personnelles
   timeline.push({
     type: 'survey-html-form',
     preamble: "<h2>Informations sur le participant</h2><p>Merci de répondre aux questions ci-dessous.</p>",
@@ -81,18 +81,18 @@
       <strong>Votre tâche :</strong> Évaluer <strong>UNIQUEMENT</strong> la fluidité de chaque lecture sur une échelle de 1 à 10.<br><br>
       La fluidité se définit par :<br>
       ⏱️ Le débit : Rythme régulier<br>
-      ⏸️ Les pauses : Aux endroits logiques (virgules, points), sans hésitations fréquentes ("euh...")<br>
-      🎶 Le flux : Liaisons naturelles entre les mots, intonation cohérente<br><br>
+      ⏸️ Les pauses : Aux endroits logiques, sans hésitations fréquentes<br>
+      🎶 Le flux : Liaisons naturelles, intonation cohérente<br><br>
       Ignorez :<br>
-      ❌ L'accent ou la prononciation des sons individuels<br>
-      ❌ La complexité du vocabulaire<br>
-      ❌ Votre opinion sur le contenu du texte<br><br>
+      ❌ L'accent<br>
+      ❌ La prononciation<br>
+      ❌ Votre opinion sur le texte<br><br>
       Appuyez sur une touche pour commencer.
       </p>
     `
   });
 
-  // 🎵 Audios
+  // 🎵 Liste des fichiers audio (doivent être placés dans un dossier /audio/)
   let audio_files = [
     "audio/1.wav", "audio/2.wav", "audio/3.wav", "audio/4.wav",
     "audio/5.wav", "audio/6.wav", "audio/7.wav", "audio/8.wav",
@@ -116,7 +116,7 @@
         max: 10,
         step: 1,
         slider_start: 5,
-        labels: ['1', '10'],
+        labels: ['1 (Pas fluide)', '10 (Très fluide)'],
         require_movement: true,
         data: { question: 'fluidity_rating', audio: file }
       },
@@ -131,14 +131,13 @@
     );
   });
 
-  // ✅ Fin
+  // 🎉 Fin de l'expérience
   timeline.push({
     type: 'html-keyboard-response',
     stimulus: '<p>Merci pour votre participation !<br>Appuyez sur une touche pour envoyer vos réponses.</p>'
   });
 
-  // 🟢 Démarrer l’expérience
-  jsPsych.init({ timeline: timeline });
-
+  // 🚀 Lancer l'expérience
+  jsPsych.run(timeline);
 </script>
 </html>
