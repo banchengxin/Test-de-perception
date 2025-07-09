@@ -24,7 +24,7 @@
     type: jsPsychHtmlButtonResponse,
     stimulus: `
       <h2>Consignes</h2>
-      <p>Vous allez écouter <strong>40 extraits audio</strong> de personnes lisant un court texte en français.</p>
+      <p>Vous allez écouter <strong>12 extraits audio</strong> de personnes lisant un court texte en français.</p>
       <p><strong>Votre tâche</strong> : Évaluer <u>UNIQUEMENT</u> la fluidité de chaque lecture sur une échelle de 1 à 10.</p>
       <h3>La fluidité se définit par :</h3>
       <ul style="text-align:left; max-width: 600px; margin:auto;">
@@ -49,7 +49,7 @@
     const prompt_explanation = `<p>Pourquoi avez-vous choisi ce chiffre ?</p>`;
 
     const audio_files = jsPsych.randomization.shuffle(
-      Array.from({length: 40}, (_, i) => `audio/${i + 1}.wav`)
+      Array.from({length: 12}, (_, i) => `audio/${i + 1}.wav`)
     );
 
     return audio_files.map((file, index) => {
