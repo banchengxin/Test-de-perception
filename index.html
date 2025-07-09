@@ -7,17 +7,103 @@
   <script src="dist/jspsych.js"></script>
   <script src="dist/plugin-html-button-response.js"></script>
   <script src="dist/plugin-survey-text.js"></script>
+  <script src="dist/plugin-survey-multi-choice.js"></script>
 </head>
 <body></body>
 
 <script>
-  const jsPsych = initJsPsych({
-    on_finish: () => jsPsych.data.displayData()
-  });
+const jsPsych = initJsPsych({
+  on_finish: () => {
+    const rawData = jsPsych.data.get().values();
+
+    // 清洗数据结构
+    const cleanedData = rawData.map(d => ({
+      age: d.response?.age || '',
+      gender: d.response?.gender || '',
+      profession: d.response?.profession || '',
+      native_language: d.response?.native_language || '',
+      other_languages: d.response?.other_languages || '',
+      speaks_chinese: d.response?.speaks_chinese || '',
+      file: d.file || '',
+      trial_num: d.trial_num || '',
+      phase: d.phase || '',
+      rating: d.button_pressed ? parseInt(d.button_pressed) + 1 : '',
+      explanation: d.response?.explanation || ''
+    }));
+
+    // 🔁 替换成你的 Google Apps Script 部署链接
+    fetch('https://script.google.com/macros/s/AKfycbx3dm_-c7IQ7_8I50dPFLouXsBFr7x74jlGXgElPsDoD55CWMP3hM3l5k-usS9nIhKR/exec', {
+      method: 'POST',
+      body: JSON.stringify(cleanedData),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }).then(() => {
+      jsPsych.data.displayData(); // 你也可以选择不显示
+    }).catch(error => {
+      console.error('Erreur d’envoi vers Google Sheets:', error);
+      alert('Erreur de sauvegarde. Veuillez réessayer plus tard.');
+    });
+  }
+});
+
 
   const timeline = [];
 
   const MAX_PLAYS = 3;
+
+  // Participant demographics survey
+timeline.push({
+  type: jsPsychSurveyText,
+  preamble: "<h3>Avant de commencer, merci de répondre aux questions suivantes :</h3>",
+  questions: [
+    {
+      prompt: "Âge :",
+      name: "age",
+      required: true
+    },
+    {
+      prompt: "Profession :",
+      name: "profession",
+      required: true
+    },
+    {
+      prompt: "Langue maternelle :",
+      name: "native_language",
+      required: true
+    },
+    {
+      prompt: "Quelles langues parlez-vous ? (séparées par des virgules)",
+      name: "other_languages",
+      required: false
+    }
+  ],
+  data: {
+    phase: "demographics_text"
+  }
+});
+
+timeline.push({
+  type: jsPsychSurveyMultiChoice,
+  questions: [
+    {
+      prompt: "Genre :",
+      name: "gender",
+      options: ["Homme", "Femme", "Non binaire", "Préférer ne pas dire", "Autre"],
+      required: true
+    },
+    {
+      prompt: "Parlez-vous chinois ?",
+      name: "speaks_chinese",
+      options: ["Oui", "Non", "Un peu"],
+      required: true
+    }
+  ],
+  data: {
+    phase: "demographics_choice"
+  }
+});
+
 
   // Instructions en français
   timeline.push({
@@ -46,7 +132,7 @@
   // Génère les essais audio + évaluation + explication
   const generateAudioTrials = () => {
     const prompt_rating = `<p>Évaluez la fluidité de cette lecture (1 = pas fluide, 10 = très fluide)</p>`;
-    const prompt_explanation = `<p>Pourquoi avez-vous choisi ce chiffre ?</p>`;
+    const prompt_explanation = `<p>Pourquoi?</p>`;
 
     const audio_files = jsPsych.randomization.shuffle(
       Array.from({length: 12}, (_, i) => `audio/${i + 1}.wav`)
